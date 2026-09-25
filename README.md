@@ -1,6 +1,6 @@
 # Saisonkalender Bern
 
-Was jetzt aus der Region Bern Saison hat, Monat für Monat: 26 Gemüse, 10 Obstsorten und Nüsse, mit Hochsaison-Markierung und einem Küchen-Tipp pro Produkt vom Koch. DE/EN/SK, kein Tracking.
+Was jetzt aus der Region Bern Saison hat, Monat für Monat: 26 Gemüse, 10 Obstsorten und Nüsse, mit Hochsaison-Markierung und einem Küchen-Tipp pro Produkt vom Koch. DE/EN, kein Tracking.
 
 Live: **https://richardcervenka111-create.github.io/saisonkalender-bern/**
 
