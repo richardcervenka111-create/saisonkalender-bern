@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saisonkalender Bern</title>
+<meta name="description" content="Was jetzt aus der Region Bern Saison hat, Monat für Monat. Gemüse, Obst, Kräuter. Mit Küchen-Tipp vom Koch. Kein Tracking.">
+<style>
+:root{--bg:#10241a;--card:#173224;--line:#25493a;--txt:#eef7f0;--mut:#a3c1b0;--acc:#7ee2a8;--gold:#f2c14e;--now:#ffb347}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:17px/1.5 -apple-system,system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:24px;margin:8px 0 2px}.sub{color:var(--mut);font-size:14px;margin-bottom:12px}
+.months{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:10px 0 16px}
+.months button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 4px;font-size:14px;cursor:pointer;min-height:44px}
+.months button[aria-pressed="true"]{background:var(--acc);color:#062;border-color:var(--acc);font-weight:700}
+.months button.now{outline:2px solid var(--now)}
+.lang{float:right}.lang button{background:none;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:4px 8px;font-size:13px;cursor:pointer}.lang button[aria-pressed="true"]{background:var(--acc);color:#062;border-color:var(--acc)}
+h2{font-size:17px;margin:18px 0 8px;color:var(--gold)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.it{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}
+.it b{display:block;font-size:16px}.it span{font-size:12px;color:var(--mut)}
+.it.peak{border-color:var(--acc)}.it.peak span::before{content:"★ ";color:var(--acc)}
+.it.store{opacity:.85}
+.tip{background:var(--card);border-left:3px solid var(--gold);border-radius:8px;padding:12px;margin-top:14px;display:none}
+.tip.on{display:block}.tip b{color:var(--gold)}
+.leg{font-size:13px;color:var(--mut);margin-top:6px}
+.foot{color:var(--mut);font-size:13px;margin-top:26px;border-top:1px solid var(--line);padding-top:10px}.foot a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+<div class="lang" role="group"><button data-l="de" aria-pressed="true">DE</button><button data-l="en" aria-pressed="false">EN</button><button data-l="sk" aria-pressed="false">SK</button></div>
+<h1 id="h">Saisonkalender Bern</h1>
+<div class="sub" id="s">Was jetzt aus der Region Saison hat. ★ = Hochsaison, am günstigsten und am besten. Antippen für den Küchen-Tipp.</div>
+<div class="months" id="months"></div>
+<h2 id="hv"></h2><div class="grid" id="veg"></div>
+<h2 id="hf"></h2><div class="grid" id="fruit"></div>
+<h2 id="hl"></h2><div class="grid" id="store"></div>
+<div class="tip" id="tip"></div>
+<div class="leg" id="leg"></div>
+<div class="foot" id="foot"></div>
+</main>
+<script>
+(function(){
+// Monate 1..12; s = Saison (Freiland / Region Bern, Mittelland), p = Hochsaison, l = Lager-/Vorratsware (regional, aus dem Lager)
+// Quelle: Saisontabellen Schweizer Bauernverband / Landwirtschaftlicher Informationsdienst (LID), Küchenpraxis. Orientierung, kein Gesetz: ein warmer April verschiebt alles.
+const V=[
+ ["Spargel","Asparagus","Špargľa",[4,5,6],[5],"Nur bis Johanni (24. Juni), dann braucht die Pflanze Ruhe. Weisser Spargel schälen, grüner nicht. Schalen auskochen: Basis für die Suppe."],
+ ["Bärlauch","Wild garlic","Medvedí cesnak",[3,4],[4],"Vor der Blüte pflücken, danach wird er bitter. Verwechslungsgefahr mit Maiglöckchen: Blatt reiben, es muss nach Knoblauch riechen."],
+ ["Rhabarber","Rhubarb","Rebarbora",[4,5,6],[5],"Ab Juli steigt die Oxalsäure, dann lassen. Nie roh in Mengen. Mit Erdbeeren im Juni das beste Paar des Jahres."],
+ ["Spinat","Spinach","Špenát",[4,5,6,9,10],[5,10],"Frühlings- und Herbstgemüse, im Hochsommer schiesst er. Kurz, heiss, wenig Wasser: er bringt sein eigenes mit."],
+ ["Radieschen","Radish","Reďkovka",[4,5,6,7,8,9],[5,6],"Blätter nicht wegwerfen: als Pesto oder in die Suppe. Radieschen selbst kurz in Butter schwenken, wird mild."],
+ ["Kopfsalat","Lettuce","Hlávkový šalát",[4,5,6,7,8,9,10],[5,6],"Erst kurz vor dem Essen anmachen. Sauce: Essig, Salz, dann Öl, sonst löst sich das Salz nie."],
+ ["Erbsen","Peas","Hrach",[6,7],[6],"Der Zucker wird nach der Ernte in Stunden zu Stärke: am Markttag kochen. Schoten für Fond mitkochen."],
+ ["Kefen","Sugar snap peas","Cukrový hrášok",[6,7],[6],"90 Sekunden in Salzwasser, eiskalt abschrecken. Mehr braucht es nicht."],
+ ["Zucchetti","Courgette","Cuketa",[6,7,8,9],[7,8],"Kleine sind besser als grosse. Grosse: raspeln, salzen, ausdrücken, dann in Tätschli oder Kuchen."],
+ ["Gurken","Cucumber","Uhorka",[6,7,8,9],[7,8],"Salzen und 20 Minuten ziehen lassen, dann bleibt der Salat knackig statt wässrig."],
+ ["Tomaten","Tomatoes","Paradajky",[7,8,9],[8],"Nie in den Kühlschrank, das Aroma stirbt bei 8 Grad. Überreife: einkochen, Sugo für den Winter."],
+ ["Bohnen","Beans","Fazuľa",[7,8,9],[8],"Roh giftig (Phasin), immer mindestens 10 Minuten kochen. Mit Bohnenkraut, darum heisst es so."],
+ ["Peperoni","Bell pepper","Paprika",[7,8,9],[8],"Regional erst ab Juli, vorher aus dem Gewächshaus. Ganz im Ofen schwarz rösten, Haut ab, in Öl: hält Wochen."],
+ ["Auberginen","Aubergine","Baklažán",[7,8,9],[8],"Salzen ist heute unnötig, die Bitterkeit ist weggezüchtet. Braucht Öl und Hitze, sonst schwammig."],
+ ["Mais","Sweetcorn","Kukurica",[7,8,9],[8],"Wie Erbsen: Zucker wird zu Stärke. Kolben am Kauftag kochen, 6 Minuten reichen."],
+ ["Fenchel","Fennel","Fenikel",[6,7,8,9,10],[8,9],"Das Grün ist das beste daran. Knolle dünn gehobelt roh mit Orange, oder halbiert langsam in Butter."],
+ ["Randen","Beetroot","Cvikla",[7,8,9,10,11],[9,10],"Im Ofen in Folie 60 Minuten, dann schälen: viel mehr Aroma als gekocht. Hält gelagert bis März."],
+ ["Kürbis","Pumpkin","Tekvica",[9,10,11],[10],"Hokkaido braucht keine Schale ab. Kerne rösten. Ein ganzer Kürbis hält kühl und trocken Monate."],
+ ["Lauch","Leek","Pór",[9,10,11,12,1,2,3],[10,11],"Sand sitzt zwischen den Schichten: längs halbieren und unter fliessendem Wasser fächern."],
+ ["Kabis","Cabbage","Kapusta",[9,10,11,12,1,2],[10,11],"Das Berner Gemüse schlechthin. Sauerkraut selber: 2 % Salz, kneten, beschweren, 3 Wochen. Rosenkohl erst nach dem Frost süss."],
+ ["Federkohl","Kale","Kel kučeravý",[10,11,12,1,2],[11,12],"Nach dem ersten Frost besser. Stiele raus, Blätter mit Öl und Salz massieren, dann roh oder im Ofen als Chips."],
+ ["Nüsslisalat","Lamb's lettuce","Valeriánka",[10,11,12,1,2,3],[11,12,1],"Der Wintersalat aus dem Seeland. Wurzelansatz dranlassen, sonst zerfällt er. Sauce mit Ei oder Speck."],
+ ["Chicorée","Chicory","Čakanka",[10,11,12,1,2,3],[12,1],"Bitterkeit sitzt im Strunk: keilförmig ausschneiden. Im Ofen mit Schinken und Käse: das Wintergericht."],
+ ["Sellerie","Celeriac","Zeler",[9,10,11,12,1,2,3],[10,11],"Knolle als Schnitzel: 1 cm dick, blanchieren, panieren. Lagert bis Frühling im Keller."],
+ ["Rüebli","Carrots","Mrkva",[6,7,8,9,10,11,12,1,2,3],[7,8,9,10],"Bundrüebli im Sommer, Lagerrüebli ab Herbst. Grün nicht wegwerfen: Pesto. Junge ungeschält, nur gebürstet."],
+ ["Kartoffeln","Potatoes","Zemiaky",[6,7,8,9,10,11,12,1,2,3,4],[7,8,9],"Frühkartoffeln ab Juni mit Schale. Lagerware kühl, dunkel, nie im Kühlschrank (wird süss). Grüne Stellen grosszügig weg."],
+ ["Zwiebeln","Onions","Cibuľa",[7,8,9,10,11,12,1,2,3],[8,9,10],"Zibelemärit ist im November, weil da die Lagerzwiebel bereit ist. Langsam in Butter, 30 Minuten, nie braun: dann süss."],
+];
+const F=[
+ ["Erdbeeren","Strawberries","Jahody",[5,6,7],[6],"Nicht waschen, bis sie gegessen werden. Nie kühlschrankkalt essen, das Aroma kommt erst bei 18 Grad."],
+ ["Kirschen","Cherries","Čerešne",[6,7],[7],"Mit Stiel kaufen, ohne Stiel verderben sie in einem Tag. Entsteinen mit einer Flasche und einem Essstäbchen."],
+ ["Himbeeren","Raspberries","Maliny",[6,7,8,9],[7],"Halten einen Tag. Rest einfrieren, flach auf einem Blech, dann in den Beutel."],
+ ["Aprikosen","Apricots","Marhule",[7,8],[7],"Aus dem Wallis, nicht aus Bern, aber Schweiz. Reif riechen sie am Stielansatz. Halbiert im Ofen mit Rosmarin."],
+ ["Zwetschgen","Damsons","Slivky",[8,9],[9],"Fellenberg im September. Kuchen: Zwetschgen auf Teig, Zucker erst nach dem Backen, sonst Saft-Sumpf."],
+ ["Äpfel","Apples","Jablká",[8,9,10,11,12,1,2,3,4],[9,10],"Lagerware ab Oktober bis Frühling: der regionalste Snack im Winter. Nicht neben Gemüse lagern, Ethylen lässt es altern."],
+ ["Birnen","Pears","Hrušky",[8,9,10,11,12],[9,10],"Reifen nach der Ernte: hart kaufen, bei Zimmertemperatur 2 bis 4 Tage. Birnbrot ist Berner Winterküche."],
+ ["Trauben","Grapes","Hrozno",[9,10],[9],"Vom Bielersee und Thunersee. Kerne dran: die haben das Tannin, für Saucen mitpressen."],
+ ["Quitten","Quinces","Dule",[10,11],[10],"Roh ungeniessbar, gekocht das beste Herbstobst. Gelee: Kerne mitkochen, die haben das Pektin."],
+ ["Nüsse","Walnuts","Vlašské orechy",[10,11,12],[10],"Frisch ab Baum im Oktober noch feucht, 2 Wochen trocknen. Alte Nüsse riechen ranzig: probieren vor dem Backen."],
+];
+const L={
+ de:{h:"Saisonkalender Bern",s:"Was jetzt aus der Region Saison hat. ★ = Hochsaison, am günstigsten und am besten. Antippen für den Küchen-Tipp.",hv:"Gemüse jetzt",hf:"Obst und Nüsse jetzt",hl:"Aus dem Lager (regional, gelagert)",leg:"Freiland Region Bern/Mittelland. Ein warmer April verschiebt alles um zwei Wochen; der Markt hat immer recht.",tip:"Küchen-Tipp",
+   foot:'Orientierung nach Saisontabellen des Schweizer Bauernverbands und Küchenpraxis, nicht nach Gesetz. Kein Tracking. <a href="https://github.com/richardcervenka111-create/saisonkalender-bern">GitHub</a> · MIT',months:["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"]},
+ en:{h:"Bern season calendar",s:"What is in season from the region right now. ★ = peak season, cheapest and best. Tap for the chef's tip.",hv:"Vegetables now",hf:"Fruit and nuts now",hl:"From storage (regional, stored)",leg:"Open-field, Bern region. A warm April shifts everything by two weeks; the market is always right.",tip:"Chef's tip",
+   foot:'Guidance based on Swiss Farmers’ Union season tables and kitchen practice, not law. No tracking. <a href="https://github.com/richardcervenka111-create/saisonkalender-bern">GitHub</a> · MIT',months:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]},
+ sk:{h:"Sezónny kalendár Bern",s:"Čo má práve teraz sezónu z regiónu. ★ = vrchol sezóny, najlacnejšie a najlepšie. Ťukni na tip z kuchyne.",hv:"Zelenina teraz",hf:"Ovocie a orechy teraz",hl:"Zo skladu (regionálne, uskladnené)",leg:"Voľná pôda, región Bern. Teplý apríl posunie všetko o dva týždne; trh má vždy pravdu.",tip:"Tip z kuchyne",
+   foot:'Orientácia podľa sezónnych tabuliek Švajčiarskeho zväzu poľnohospodárov a praxe z kuchyne, nie podľa zákona. Žiadne sledovanie. <a href="https://github.com/richardcervenka111-create/saisonkalender-bern">GitHub</a> · MIT',months:["Jan","Feb","Mar","Apr","Máj","Jún","Júl","Aug","Sep","Okt","Nov","Dec"]}};
+let lang="de", m=new Date().getMonth()+1; const now=m;
+const $=id=>document.getElementById(id); const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const name=x=>x[lang==="de"?0:lang==="en"?1:2];
+function card(x,cls){ const d=document.createElement("div"); d.className="it "+cls; d.innerHTML=`<b>${esc(name(x))}</b><span>${x[4].includes(m)?"":""}${esc(x[0])}</span>`; d.onclick=()=>{ $("tip").className="tip on"; $("tip").innerHTML=`<b>${esc(L[lang].tip)} · ${esc(name(x))}</b><br>${esc(x[5])}`; $("tip").scrollIntoView({behavior:"smooth",block:"nearest"}); }; return d; }
+function render(){ const T=L[lang]; $("h").textContent=T.h; $("s").textContent=T.s; $("hv").textContent=T.hv; $("hf").textContent=T.hf; $("hl").textContent=T.hl; $("leg").textContent=T.leg; $("foot").innerHTML=T.foot; document.documentElement.lang=lang; document.title=T.h;
+  const mo=$("months"); mo.innerHTML=""; T.months.forEach((n,i)=>{ const b=document.createElement("button"); b.textContent=n; b.setAttribute("aria-pressed",i+1===m?"true":"false"); if(i+1===now) b.classList.add("now"); b.onclick=()=>{m=i+1; $("tip").className="tip"; render();}; mo.appendChild(b); });
+  const veg=$("veg"), fr=$("fruit"), st=$("store"); veg.innerHTML=fr.innerHTML=st.innerHTML="";
+  // Saison = Monat in s; Hochsaison = in p; Lager = Wintermonate für Lagerware (Rüebli, Kartoffeln, Äpfel …) ausserhalb Freiland-Saison markieren wir über die langen Listen selbst
+  V.forEach(x=>{ if(x[3].includes(m)) veg.appendChild(card(x,x[4].includes(m)?"peak":"")); });
+  F.forEach(x=>{ if(x[3].includes(m)) fr.appendChild(card(x,x[4].includes(m)?"peak":"")); });
+  // Lagerware: alles mit Saison ≥ 8 Monaten zählt in den Monaten ausserhalb der Hochsaison als Lager
+  [...V,...F].forEach(x=>{ if(x[3].length>=8 && x[3].includes(m) && !x[4].includes(m)) st.appendChild(card(x,"store")); });
+  document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l===lang?"true":"false")); }
+document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>{lang=b.dataset.l; render();}));
+render();
+})();
+</script>
+</body>
+</html>
